@@ -4,14 +4,11 @@ const API = import.meta.env.VITE_API_URL;
 
 function App() {
   const [students, setStudents] = useState([]);
+  const [filter, setFilter] = useState("ALL");
   const [form, setForm] = useState({
     name: "",
     phone: "",
-    aadharNumber: "",
-    aadharPhoto: "",
-    studentPhoto: "",
-    totalFees: "",
-    paidAmount: "",
+    monthlyFees: "",
     seatReserved: true,
   });
 
@@ -39,146 +36,118 @@ function App() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
-        totalFees: parseFloat(form.totalFees),
-        paidAmount: parseFloat(form.paidAmount),
+        monthlyFees: parseFloat(form.monthlyFees),
       }),
     });
-
     fetchStudents();
   };
 
-  const totalRevenue = students.reduce((sum, s) => sum + s.paidAmount, 0);
-  const totalDue = students.reduce(
-    (sum, s) => sum + (s.totalFees - s.paidAmount),
-    0
-  );
+  const pay = async (id) => {
+    await fetch(`${API}/students/${id}/pay?amount=1000`, {
+      method: "PUT",
+    });
+    fetchStudents();
+  };
+
+  const filtered =
+    filter === "ALL"
+      ? students
+      : students.filter((s) => s.currentMonthStatus === filter);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-slate-900 text-slate-200 p-6">
 
-      {/* Navbar */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-4 text-xl font-semibold">
-        Study Management Dashboard
+      <h1 className="text-3xl font-bold mb-8 text-indigo-400">
+        Study Room Dashboard
+      </h1>
+
+      {/* Add Student */}
+      <div className="bg-slate-800 p-6 rounded-2xl shadow-lg mb-8">
+        <h2 className="text-lg mb-4 text-slate-300">Add Student</h2>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <input name="name" placeholder="Name"
+            onChange={handleChange}
+            className="bg-slate-700 p-2 rounded"/>
+
+          <input name="phone" placeholder="Phone"
+            onChange={handleChange}
+            className="bg-slate-700 p-2 rounded"/>
+
+          <input name="monthlyFees" placeholder="Monthly Fees"
+            onChange={handleChange}
+            className="bg-slate-700 p-2 rounded"/>
+
+          <label className="flex items-center gap-2">
+            <input type="checkbox"
+              name="seatReserved"
+              checked={form.seatReserved}
+              onChange={handleChange}/>
+            Seat Reserved
+          </label>
+        </div>
+
+        <button
+          onClick={submit}
+          className="mt-4 bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded-lg">
+          Add
+        </button>
       </div>
 
-      <div className="p-6">
+      {/* Filter */}
+      <div className="mb-4">
+        <select
+          onChange={(e) => setFilter(e.target.value)}
+          className="bg-slate-800 p-2 rounded">
+          <option value="ALL">All</option>
+          <option value="PAID">Paid</option>
+          <option value="PARTIAL">Partial</option>
+          <option value="PENDING">Pending</option>
+        </select>
+      </div>
 
-        {/* Summary Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-blue-500 text-white p-6 rounded-xl shadow">
-            Total Students: {students.length}
-          </div>
-          <div className="bg-green-500 text-white p-6 rounded-xl shadow">
-            Total Revenue: ₹{totalRevenue}
-          </div>
-          <div className="bg-red-500 text-white p-6 rounded-xl shadow">
-            Total Due Amount: ₹{totalDue}
-          </div>
-        </div>
-
-        {/* Add Student Form */}
-        <div className="bg-white p-6 rounded-xl shadow mb-10">
-          <h2 className="text-lg font-semibold mb-4">Add Student</h2>
-
-          <div className="grid md:grid-cols-2 gap-4">
-
-            <input name="name" placeholder="Name"
-              onChange={handleChange}
-              className="border p-2 rounded"/>
-
-            <input name="phone" placeholder="Phone"
-              onChange={handleChange}
-              className="border p-2 rounded"/>
-
-            <input name="aadharNumber" placeholder="Aadhar Number"
-              onChange={handleChange}
-              className="border p-2 rounded"/>
-
-            <input name="aadharPhoto" placeholder="Aadhar Photo URL"
-              onChange={handleChange}
-              className="border p-2 rounded"/>
-
-            <input name="studentPhoto" placeholder="Student Photo URL"
-              onChange={handleChange}
-              className="border p-2 rounded"/>
-
-            <input type="number" name="totalFees"
-              placeholder="Total Fees"
-              onChange={handleChange}
-              className="border p-2 rounded"/>
-
-            <input type="number" name="paidAmount"
-              placeholder="Paid Amount"
-              onChange={handleChange}
-              className="border p-2 rounded"/>
-
-            <label className="flex items-center gap-2">
-              <input type="checkbox"
-                name="seatReserved"
-                checked={form.seatReserved}
-                onChange={handleChange}/>
-              Seat Reserved
-            </label>
-
-          </div>
-
-          <button
-            onClick={submit}
-            className="mt-6 bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700">
-            Submit
-          </button>
-        </div>
-
-        {/* Student Table */}
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-200">
-              <tr>
-                <th className="p-3">Name</th>
-                <th className="p-3">Phone</th>
-                <th className="p-3">Seat</th>
-                <th className="p-3">Total Fees</th>
-                <th className="p-3">Paid</th>
-                <th className="p-3">Due</th>
-                <th className="p-3">Status</th>
+      {/* Table */}
+      <div className="bg-slate-800 rounded-2xl overflow-hidden shadow-lg">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-700 text-slate-300">
+            <tr>
+              <th className="p-3">Name</th>
+              <th className="p-3">Phone</th>
+              <th className="p-3">Fees</th>
+              <th className="p-3">Paid</th>
+              <th className="p-3">Due</th>
+              <th className="p-3">Status</th>
+              <th className="p-3">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((s) => (
+              <tr key={s.id} className="border-t border-slate-700">
+                <td className="p-3">{s.name}</td>
+                <td className="p-3">{s.phone}</td>
+                <td className="p-3">₹{s.monthlyFees}</td>
+                <td className="p-3">₹{s.currentMonthPaid}</td>
+                <td className="p-3">₹{s.currentMonthDue}</td>
+                <td className="p-3">
+                  <span className={`px-3 py-1 rounded-full text-xs
+                    ${s.currentMonthStatus==="PAID" && "bg-emerald-600"}
+                    ${s.currentMonthStatus==="PARTIAL" && "bg-amber-600"}
+                    ${s.currentMonthStatus==="PENDING" && "bg-rose-600"}
+                  `}>
+                    {s.currentMonthStatus}
+                  </span>
+                </td>
+                <td className="p-3">
+                  <button
+                    onClick={() => pay(s.id)}
+                    className="bg-indigo-600 px-3 py-1 rounded">
+                    Pay 1000
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {students.map((s) => {
-                const due = s.totalFees - s.paidAmount;
-                const status =
-                  s.paidAmount === s.totalFees
-                    ? "PAID"
-                    : s.paidAmount === 0
-                    ? "DUE"
-                    : "PARTIAL";
-
-                return (
-                  <tr key={s.id} className="border-t">
-                    <td className="p-3">{s.name}</td>
-                    <td className="p-3">{s.phone}</td>
-                    <td className="p-3">
-                      {s.seatReserved ? "Yes" : "No"}
-                    </td>
-                    <td className="p-3">₹{s.totalFees}</td>
-                    <td className="p-3">₹{s.paidAmount}</td>
-                    <td className="p-3">₹{due}</td>
-                    <td className="p-3">
-                      <span className={`px-2 py-1 rounded text-white text-xs
-                        ${status==="PAID" && "bg-green-500"}
-                        ${status==="PARTIAL" && "bg-yellow-500"}
-                        ${status==="DUE" && "bg-red-500"}
-                      `}>
-                        {status}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
