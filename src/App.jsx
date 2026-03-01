@@ -1,27 +1,29 @@
 import { useEffect, useState } from "react";
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_URL;
 
 function App() {
   const [students, setStudents] = useState([]);
   const [form, setForm] = useState({
     name: "",
+    phone: "",
+    aadharNumber: "",
     aadharPhoto: "",
     studentPhoto: "",
     totalFees: "",
-    paidFees: "",
-    seatReserved: false,
+    paidAmount: "",
+    seatReserved: true,
   });
-
-  const fetchStudents = async () => {
-    const res = await fetch(`${BASE_URL}/students`);
-    const data = await res.json();
-    setStudents(data);
-  };
 
   useEffect(() => {
     fetchStudents();
   }, []);
+
+  const fetchStudents = async () => {
+    const res = await fetch(`${API}/students`);
+    const data = await res.json();
+    setStudents(data);
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -31,158 +33,150 @@ function App() {
     });
   };
 
-  const addStudent = async () => {
-    await fetch(`${BASE_URL}/students`, {
+  const submit = async () => {
+    await fetch(`${API}/students`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
         totalFees: parseFloat(form.totalFees),
-        paidFees: parseFloat(form.paidFees),
+        paidAmount: parseFloat(form.paidAmount),
       }),
-    });
-
-    setForm({
-      name: "",
-      aadharPhoto: "",
-      studentPhoto: "",
-      totalFees: "",
-      paidFees: "",
-      seatReserved: false,
     });
 
     fetchStudents();
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-6 md:p-10">
-      <div className="max-w-7xl mx-auto">
+  const totalRevenue = students.reduce((sum, s) => sum + s.paidAmount, 0);
+  const totalDue = students.reduce(
+    (sum, s) => sum + (s.totalFees - s.paidAmount),
+    0
+  );
 
-        {/* Header */}
-        <h1 className="text-4xl font-bold text-center text-indigo-600 mb-10">
-          🎓 Study Room Student Management
-        </h1>
+  return (
+    <div className="min-h-screen bg-gray-100">
+
+      {/* Navbar */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-4 text-xl font-semibold">
+        Study Management Dashboard
+      </div>
+
+      <div className="p-6">
+
+        {/* Summary Cards */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-blue-500 text-white p-6 rounded-xl shadow">
+            Total Students: {students.length}
+          </div>
+          <div className="bg-green-500 text-white p-6 rounded-xl shadow">
+            Total Revenue: ₹{totalRevenue}
+          </div>
+          <div className="bg-red-500 text-white p-6 rounded-xl shadow">
+            Total Due Amount: ₹{totalDue}
+          </div>
+        </div>
 
         {/* Add Student Form */}
-        <div className="bg-white p-8 rounded-3xl shadow-lg mb-12">
-          <h2 className="text-2xl font-semibold mb-6">Add New Student</h2>
+        <div className="bg-white p-6 rounded-xl shadow mb-10">
+          <h2 className="text-lg font-semibold mb-4">Add Student</h2>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <input
-              name="name"
-              placeholder="Student Name"
-              value={form.name}
+          <div className="grid md:grid-cols-2 gap-4">
+
+            <input name="name" placeholder="Name"
               onChange={handleChange}
-              className="border p-3 rounded-xl"
-            />
+              className="border p-2 rounded"/>
 
-            <input
-              name="aadharPhoto"
-              placeholder="Aadhar Photo URL"
-              value={form.aadharPhoto}
+            <input name="phone" placeholder="Phone"
               onChange={handleChange}
-              className="border p-3 rounded-xl"
-            />
+              className="border p-2 rounded"/>
 
-            <input
-              name="studentPhoto"
-              placeholder="Student Photo URL"
-              value={form.studentPhoto}
+            <input name="aadharNumber" placeholder="Aadhar Number"
               onChange={handleChange}
-              className="border p-3 rounded-xl"
-            />
+              className="border p-2 rounded"/>
 
-            <input
-              type="number"
-              name="totalFees"
+            <input name="aadharPhoto" placeholder="Aadhar Photo URL"
+              onChange={handleChange}
+              className="border p-2 rounded"/>
+
+            <input name="studentPhoto" placeholder="Student Photo URL"
+              onChange={handleChange}
+              className="border p-2 rounded"/>
+
+            <input type="number" name="totalFees"
               placeholder="Total Fees"
-              value={form.totalFees}
               onChange={handleChange}
-              className="border p-3 rounded-xl"
-            />
+              className="border p-2 rounded"/>
 
-            <input
-              type="number"
-              name="paidFees"
-              placeholder="Paid Fees"
-              value={form.paidFees}
+            <input type="number" name="paidAmount"
+              placeholder="Paid Amount"
               onChange={handleChange}
-              className="border p-3 rounded-xl"
-            />
+              className="border p-2 rounded"/>
 
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
+            <label className="flex items-center gap-2">
+              <input type="checkbox"
                 name="seatReserved"
                 checked={form.seatReserved}
-                onChange={handleChange}
-              />
+                onChange={handleChange}/>
               Seat Reserved
             </label>
+
           </div>
 
           <button
-            onClick={addStudent}
-            className="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 transition"
-          >
-            Add Student
+            onClick={submit}
+            className="mt-6 bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700">
+            Submit
           </button>
         </div>
 
-        {/* Students Grid */}
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {students.map((student) => {
-            const due = student.totalFees - student.paidFees;
+        {/* Student Table */}
+        <div className="bg-white rounded-xl shadow overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-gray-200">
+              <tr>
+                <th className="p-3">Name</th>
+                <th className="p-3">Phone</th>
+                <th className="p-3">Seat</th>
+                <th className="p-3">Total Fees</th>
+                <th className="p-3">Paid</th>
+                <th className="p-3">Due</th>
+                <th className="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((s) => {
+                const due = s.totalFees - s.paidAmount;
+                const status =
+                  s.paidAmount === s.totalFees
+                    ? "PAID"
+                    : s.paidAmount === 0
+                    ? "DUE"
+                    : "PARTIAL";
 
-            return (
-              <div
-                key={student.id}
-                className="bg-white rounded-3xl shadow-md p-6 hover:shadow-lg transition"
-              >
-                <img
-                  src={student.studentPhoto}
-                  alt="Student"
-                  className="w-full h-40 object-cover rounded-xl mb-4"
-                />
-
-                <h3 className="text-xl font-bold text-indigo-600">
-                  {student.name}
-                </h3>
-
-                <p className="text-sm text-gray-500 mb-2">
-                  ID: {student.id}
-                </p>
-
-                <div className="mt-4 space-y-1 text-sm">
-                  <p>Total Fees: ₹{student.totalFees}</p>
-                  <p>Paid Fees: ₹{student.paidFees}</p>
-                  <p className="font-semibold text-red-600">
-                    Due Fees: ₹{due}
-                  </p>
-                </div>
-
-                <div className="mt-4">
-                  {student.seatReserved ? (
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
-                      Seat Reserved
-                    </span>
-                  ) : (
-                    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold">
-                      Seat Not Reserved
-                    </span>
-                  )}
-                </div>
-
-                <a
-                  href={student.aadharPhoto}
-                  target="_blank"
-                  className="block mt-4 text-indigo-500 text-sm underline"
-                >
-                  View Aadhar
-                </a>
-              </div>
-            );
-          })}
+                return (
+                  <tr key={s.id} className="border-t">
+                    <td className="p-3">{s.name}</td>
+                    <td className="p-3">{s.phone}</td>
+                    <td className="p-3">
+                      {s.seatReserved ? "Yes" : "No"}
+                    </td>
+                    <td className="p-3">₹{s.totalFees}</td>
+                    <td className="p-3">₹{s.paidAmount}</td>
+                    <td className="p-3">₹{due}</td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded text-white text-xs
+                        ${status==="PAID" && "bg-green-500"}
+                        ${status==="PARTIAL" && "bg-yellow-500"}
+                        ${status==="DUE" && "bg-red-500"}
+                      `}>
+                        {status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
       </div>
